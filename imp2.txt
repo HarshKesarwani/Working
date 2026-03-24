@@ -1,0 +1,91 @@
+Across my tenure at Allianz, I have driven the development and stabilization of mission-critical claims management systems within the BMP and 
+Commercial Claims business units. Initially, within the BMP domain (Topaz and MidCorp teams), I spearheaded the enhancement of the UK layer for
+ Litigation and Fraud, where I engineered both synchronous and asynchronous communication flows using Java 8/17 and Spring Boot. 
+ My contributions focused on designing scalable REST APIs and stabilizing core backend services to improve system performance.
+ Progressing into the Commercial Claims domain (Emerald and Diamond teams), I took a foundational role in establishing the core architecture, 
+ structuring repository setups, and configuring DevOps infrastructure using ArgoCD and SonarQube for continuous delivery. 
+ I further modernized the platform by implementing high-throughput Kafka-based messaging systems (producers/consumers) and building robust
+ microservices to support complex business epics. Currently, I lead backend development efforts within the Diamond team, focusing on the end-to-end
+ lifecycle of RESTful services, debugging distributed systems, and optimizing workflow performance within an Agile Jira and GitHub environment.
+ 
+ 
+ Consultant – Allianz Insurance (BMP Claims & Commercial Claims Domains)
+Contributed to multiple teams (Topaz, MidCorp, Emerald, Diamond) within Allianz, delivering scalable backend solutions and infrastructure enhancements.
+ In the BMP Claims domain, stabilized and enhanced core functionalities for the UK layer, developing synchronous/asynchronous communication flows and REST APIs
+ to support litigation and fraud processes. In MidCorp, implemented business functionalities and backend feature enhancements.
+ Within the Commercial Claims domain, helped establish and stabilize the core layer, structured repositories, and configured infrastructure components
+ including ArgoCD and SonarQube. Designed and developed Kafka-based messaging integrations and REST API services for critical business use cases. 
+ Currently part of the Diamond team, building and optimizing APIs, improving performance, debugging, and supporting multiple epics across commercial
+ workflows. Leveraged technologies such as Java 8/17, Spring Boot, Microservices, Oracle, Kafka, GitHub, Jira, and tools like Eclipse, IntelliJ to 
+ deliver high-quality, maintainable solutions in a fast-paced environment.
+ 
+ 
+ A Load Balancer is a system that distributes incoming requests across multiple servers or service instances so that:
+
+No single server gets overloaded
+
+Performance and response time improve
+
+High availability and fault tolerance are maintained
+
+<dependency>
+ <groupId>org.springframework.cloud</groupId>
+ <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+</dependency>
+
+<dependency>
+ <groupId>org.springframework.cloud</groupId>
+ <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+</dependency>
+
+@Configuration
+public class Config {
+
+ @Bean
+ @LoadBalanced
+ public RestTemplate restTemplate() {
+     return new RestTemplate();
+ }
+}
+
+@RestController
+public class OrderController {
+
+    private final RestTemplate restTemplate;
+
+    public OrderController(RestTemplateBuilder builder) {
+        this.restTemplate = builder.build();
+    }
+
+    @GetMapping("/orders")
+    public String getOrders() {
+        // Service name instead of hardcoded URL
+        return restTemplate.getForObject("http://INVENTORY-SERVICE/items", String.class);
+    }
+}
+
+upstream order_service {
+    server localhost:8081;
+    server localhost:8082;
+}
+server {
+    listen 80;
+    location /orders {
+        proxy_pass http://order_service;
+    }
+}
+
+
+API Gateway Load Balancing
+- Use Spring Cloud Gateway or Zuul.
+- Gateway acts as a single entry point, handling routing, authentication, rate limiting, and load balancing.
+
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: inventory
+          uri: lb://INVENTORY-SERVICE
+          predicates:
+            - Path=/inventory/**

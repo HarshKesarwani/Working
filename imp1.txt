@@ -1,0 +1,253 @@
+**1. Why does increasing threads sometimes reduce throughput?**  
+Increasing threads doesn’t always improve throughput. Once the number of threads exceeds the available CPU cores, the system spends more time 
+on context switching and managing contention than on actual work. This leads to reduced throughput despite more threads being available.Throughput
+ typically peaks near the number of cores, and adding more threads beyond that can reduce performance.
+
+
+**4. What happens when Kafka consumer lag increases?**  
+Consumer lag means messages are piling up in Kafka topics faster than they’re being processed. 
+This can lead to stale data, delayed event handling, and potential memory pressure if consumers fall too far behind. 
+Persistent lag indicates under‑provisioned consumers or inefficient processing logic.
+
+**5. How do you prevent retry storms in microservices?**  
+Retry storms occur when multiple services retry failed requests simultaneously, overwhelming the system. To prevent this, 
+I use exponential backoff with jitter, circuit breakers to stop retries when a service is down, and idempotent operations to ensure retries
+ don’t cause duplicate effects.
+
+**6. Why is circuit breaker not a complete solution?**  
+Circuit breakers stop calls to failing services, but they don’t solve underlying issues like resource exhaustion or dependency failures.
+ They need to be combined with bulkheads, rate limiting, retries with backoff, and fallback strategies to provide complete resilience.
+
+**7. How do you debug memory leaks in Spring Boot apps?**  
+I use tools like JVisualVM, JProfiler, or heap dumps to identify objects that remain in memory unexpectedly. 
+Common causes include unclosed resources, static collections holding references, or improper caching. Analyzing GC logs and heap histograms
+ helps pinpoint leaks, which are then fixed by releasing resources or redesigning object lifecycles.
+ 
+ **12. What causes cascading failures in service chains?**  
+Cascading failures occur when one service slows down or fails, causing dependent services to overload with retries or blocked calls. 
+This propagates through the chain, bringing down multiple services. Lack of isolation, retries without backoff, and tight coupling amplify the effect.
+
+
+**14. Why does autoscaling sometimes increase cost but not performance?**  
+Autoscaling adds more instances, but if the bottleneck is a shared resource like a database or external API, performance doesn’t improve. 
+Costs rise due to extra pods or VMs, but throughput remains limited. Effective autoscaling requires aligning scaling policies with actual bottlenecks.
+
+**15. How do you handle idempotency in payment systems?**  
+Payment APIs use idempotency keys provided by clients. Each request with the same key is checked against previous transactions, 
+ensuring duplicates don’t cause multiple charges. This guarantees safe retries during network failures or client resubmissions.
+
+**16. What are hidden risks of shared caches?**  
+Shared caches can introduce data leakage if not isolated. 
+ Security risks arise if sensitive data is cached without proper segregation or TTL management.
+
+**18. How do you design resilient APIs under high load?**  
+Resilient APIs use rate limiting, circuit breakers, caching, and bulkheads to isolate failures. 
+They implement retries with backoff, idempotency for safe replays, and horizontal scaling. 
+Monitoring, tracing, and adaptive throttling ensure APIs remain responsive under high load while protecting downstream systems.
+
+**1. How @RequestBody works internally in Spring Boot.**  
+`@RequestBody` tells Spring to bind the HTTP request body to a Java object. Internally, Spring uses `HttpMessageConverters` to convert JSON or XML 
+payloads into Java objects. For example, with Jackson on the classpath, JSON is deserialized into the target object. This happens before the controller
+ method executes, ensuring type‑safe access to request data.
+
+**2. End-to-end flow of how an Entity class eventually becomes a table in the database (JPA - Hibernate - SQL).**  
+When you define an `@Entity` class, JPA maps it to a database table. Hibernate, as the JPA provider, reads annotations like `@Table`,
+ `@Column`, and generates SQL schema based on them. At startup, Hibernate checks the configuration (`hibernate.hbm2ddl.auto`) and creates or validates tables.
+ When you persist an entity, Hibernate translates it into SQL `INSERT` statements, and queries are similarly generated for retrieval.
+ 
+ **5. Thread lifecycle - especially NEW vs RUNNABLE states.**  
+A thread starts in the NEW state when created but not yet started. Calling `start()` moves it to RUNNABLE, meaning it’s eligible for execution by the JVM scheduler. RUNNABLE doesn’t guarantee immediate execution; it depends on CPU availability. Once running, it may move to WAITING, TIMED_WAITING, or BLOCKED, and finally TERMINATED after completion.
+
+**6. Fail-Fast vs Fail-Safe iterators (with real examples).**  
+Fail‑fast iterators (like those in ArrayList or HashMap) throw `ConcurrentModificationException` if the collection is modified during iteration. For example, iterating an ArrayList while another thread adds elements fails fast. Fail‑safe iterators (like those in ConcurrentHashMap or CopyOnWriteArrayList) operate on a snapshot, allowing modifications without exceptions, though they may not reflect real‑time changes.
+
+**7. Why ConcurrentHashMap exists and when to use it.**  
+ConcurrentHashMap exists to provide thread‑safe access to maps without locking the entire structure. 
+It uses fine‑grained locking and CAS operations, allowing concurrent reads and writes. It’s used in multi‑threaded environments where high
+ throughput and safe access to shared maps are required, such as caching or maintaining session data.
+ 
+ **1. How does HashMap work internally?**  
+HashMap stores key‑value pairs using an array of buckets. Each bucket is a linked list or a balanced tree (since Java 8) to handle collisions.
+ The key’s `hashCode()` determines the bucket index, and `equals()` ensures uniqueness within that bucket. On insertion, if the load factor exceeds 
+ a threshold, the HashMap resizes and rehashes entries. 
+
+**2. Difference between `==`, `equals()`, and `hashCode()`.**  
+`==` compares object references, checking if two variables point to the same memory location. `equals()` is a method that compares logical equality, 
+Used often to compare content. `hashCode()` returns an integer used in hashing structures; equal objects must 
+return the same hash code to maintain consistency in collections like HashMap.
+
+**9. ThreadPoolExecutor working.**  
+ThreadPoolExecutor manages a pool of worker threads to execute tasks. It uses a blocking queue to hold tasks, core and maximum pool sizes to 
+control threads, and policies for handling rejected tasks. Threads are reused, reducing overhead, and idle threads can be terminated after a keep‑alive time.
+
+**10. How you solved a deadlock issue.**  
+Deadlocks occur when threads hold locks and wait indefinitely for each other. I resolved it by analyzing thread dumps, identifying cyclic 
+dependencies, and reordering lock acquisition to maintain a consistent order. In some cases, I replaced explicit locks with higher‑level 
+concurrency utilities like `ReentrantLock` with tryLock or concurrent collections.
+
+**14. @Transactional internal working.**  
+`@Transactional` uses AOP proxies to wrap methods in transaction boundaries. Before method execution, a transaction is started; 
+if the method completes successfully, it commits, otherwise it rolls back. It integrates with transaction managers (like JPA, JDBC) to ensure ACID properties.
+
+**15. Filter vs Interceptor.**  
+Filters are part of the Servlet API, applied before requests reach controllers, useful for logging, authentication, or request modification. 
+Interceptors are part of Spring MVC, applied around controller execution, allowing pre‑ and post‑processing of requests. 
+Filters work at a lower level, while interceptors are framework‑specific.
+
+**16. Bean scopes & dependency injection.**  
+Spring beans can have scopes like singleton (one instance per context), prototype (new instance per request), request, session, or application. 
+Dependency injection allows beans to be wired together automatically, promoting loose coupling and testability. 
+Scopes define lifecycle, while DI defines relationships.
+
+**17. Exception handling in REST APIs.**  
+Spring Boot provides `@ControllerAdvice` and `@ExceptionHandler` to centralize exception handling.
+ Custom error responses can be returned with proper HTTP status codes. This ensures consistent error handling across APIs and improves client experience.
+
+**18. How you secured APIs (JWT / OAuth).**  
+I used JWT for stateless authentication, where tokens contain claims and are signed to prevent tampering. 
+OAuth 2.0 was used for delegated authorization, allowing third‑party apps to access resources securely. 
+Spring Security integrates with both, providing filters and token validation mechanisms.
+
+
+### Database & JPA
+**19. Lazy vs Eager loading.**  
+Lazy loading fetches related entities only when accessed, reducing initial overhead. Eager loading fetches related entities immediately,
+ which can lead to performance issues if not needed. Choosing depends on use case; lazy is preferred for large relationships.
+
+**20. N+1 query problem and fix.**  
+N+1 occurs when fetching a parent entity triggers separate queries for each child. 
+This is fixed using `JOIN FETCH` in JPQL, or configuring `@EntityGraph` to load associations efficiently.
+ Batch fetching strategies also help reduce queries.
+
+**21. How indexing improves performance.**  
+Indexes allow faster lookups by reducing the need for full table scans. They maintain sorted structures (like B‑trees), enabling quick search, 
+range queries, and joins. However, indexes slow down writes, so they must be chosen carefully based on query patterns.
+
+**22. How you debugged a slow query.**  
+I used `EXPLAIN` plans to analyze query execution, identified missing indexes, and checked for inefficient joins. 
+Updating statistics, rewriting queries, or partitioning tables improved performance. In some cases, caching results reduced repeated heavy queries.
+
+**Q16. Design a Ride-Hailing App like Uber/Ola (geospatial indexing, matching service, real-time tracking).**  
+A ride‑hailing app requires efficient driver‑rider matching. I’d use geospatial indexing (like R‑trees or geohash) to quickly query nearby drivers.
+ A matching service would consider proximity, driver availability, and dynamic pricing before assigning rides. Real‑time tracking would be implemented
+ using WebSockets or MQTT, with location updates stored in a fast in‑memory database. To scale, the system would partition data geographically, 
+ ensuring queries remain efficient. Reliability would be enhanced with retries, failover, and monitoring of driver/rider states.
+ 
+ **Q14. Implement an API Rate Limiter (Token Bucket/Leaky Bucket algorithm).**  
+Rate limiting prevents abuse and ensures fair usage. I’d implement a token bucket algorithm, where each client has a bucket filled with tokens at a fixed rate.
+ Each request consumes a token, and if the bucket is empty, requests are rejected or delayed. Alternatively, the leaky bucket algorithm enforces a steady 
+ outflow rate, smoothing bursts. For distributed systems, I’d store bucket states in a centralized cache like Redis, ensuring consistency across multiple 
+ API servers. This design balances fairness, scalability, and simplicity.
+ 
+ **Q9. Design a scalable Chat Application (WebSockets, message queues, presence service).**  
+A scalable chat application requires real‑time communication, so I’d use WebSockets to maintain persistent connections between clients and servers.
+ To handle scale, incoming messages would be published to a message queue (like Kafka or RabbitMQ), ensuring durability and ordered delivery.
+ A presence service would track online/offline status, typically using a distributed in‑memory store like Redis with TTLs to expire inactive sessions. 
+ For horizontal scalability, multiple chat servers would subscribe to the queue, and load balancers would distribute connections. 
+ This architecture ensures low latency, fault tolerance, and the ability to scale to millions of concurrent users.
+
+**Q10. Design a URL Shortener (hashing, base62 encoding, database sharding).**  
+A URL shortener maps long URLs to short unique identifiers. I’d generate identifiers using hashing combined with base62 encoding 
+(digits + uppercase + lowercase letters) to keep them compact. To avoid collisions, I’d check if the hash already exists before inserting. 
+For scalability, the database would be sharded based on the short code prefix, ensuring even distribution of data. 
+A caching layer could store frequently accessed URLs to reduce database lookups. 
+
+**Q16. How do database indexes work internally and how do you decide index ordering?**  
+Indexes are data structures (commonly B‑trees or hash tables) that allow the database to quickly locate rows without scanning the entire table. 
+A B+tree index maintains a balanced tree where keys are sorted, enabling logarithmic search, insert, and delete operations. 
+
+
+
+**Q17. How do you analyze and optimize a slow SQL query running on millions of records?**  
+The first step is to examine the query execution to see how the database is accessing data—whether it’s using indexes or performing full table scans.
+ Then, I look for inefficient joins, missing indexes, or functions applied on indexed columns that prevent index usage. Techniques include adding 
+ appropriate indexes, rewriting queries to reduce nested subqueries, and partitioning large tables. 
+ I also check statistics and ensure they’re up to date, since stale statistics can mislead the optimizer. Finally, I validate whether denormalization
+ or caching results could reduce repeated heavy queries.
+
+**Q18. How do you design database schemas to handle high-volume transactional data?**  
+For high‑volume transactional systems, normalization is important to reduce redundancy, but I balance it with denormalization for performance. 
+I use partitioning strategies (range, hash, or list) to spread data across physical storage, and sharding if scale demands horizontal distribution. 
+Primary keys are chosen carefully to avoid hotspots (e.g., using UUIDs or time‑based keys with randomization). I also design with ACID guarantees in mind, 
+ensuring proper foreign keys and constraints, while considering indexing strategies that support frequent queries without overloading write performance.
+
+**Q19. How do you ensure data consistency when concurrent debit and credit operations occur?**  
+Consistency in concurrent financial operations requires transactional integrity. I rely on database transactions with isolation levels like `SERIALIZABLE`
+ or `REPEATABLE READ` when strict correctness is needed, though they can reduce throughput. Optimistic concurrency control with versioning can help in
+ high‑throughput systems. For distributed systems, I use techniques like two‑phase commit or idempotent operations to ensure correctness. 
+ Additionally, I design APIs to enforce atomic debit‑credit pairs, so either both succeed or both fail, preventing partial updates.
+
+---
+
+### System Design
+**Q20. Design a high-throughput transaction processing system with strong consistency guarantees.**  
+I would design this around a distributed database that supports strong consistency, such as one using consensus protocols like Raft or Paxos. 
+The system would be partitioned for scalability, with each partition replicated across nodes for fault tolerance. A message queue could handle incoming
+ requests, ensuring durability before processing. Transactions would be processed with strict ACID guarantees, possibly using synchronous replication
+ for critical data. To balance throughput and consistency, I’d use batching and carefully tune isolation levels, while ensuring monitoring and retry 
+ logic for failed transactions.
+
+**Q21. Design a distributed caching strategy for frequently accessed account balance data.**  
+Account balances are sensitive, so caching must be consistent and secure. I’d use a distributed cache like Redis or Memcached with replication and 
+persistence enabled. To avoid stale data, I’d implement a write‑through or write‑around strategy, ensuring updates propagate to both cache and database.
+ For high consistency, I’d use cache invalidation triggered by database changes, possibly via event streams. Sharding the cache ensures scalability, 
+ and access control ensures sensitive data isn’t exposed improperly.
+ 
+ **5. How do you handle retries, idempotency, and failures?**  
+Retries are implemented with exponential backoff and jitter to avoid retry storms. Idempotency ensures repeated requests don’t cause duplicate effects, often using unique request IDs. Failures are handled with circuit breakers, fallbacks, and compensating transactions. Together, these patterns make microservices resilient under real production conditions.
+
+**6. How do you design for 10M users?**  
+Designing for scale requires horizontal scalability. I’d use load balancers, stateless services, and distributed caches. Databases would be sharded or partitioned, and CDNs would serve static content globally. Event‑driven architecture helps handle spikes, while monitoring and autoscaling ensure resources adapt dynamically. The key is to eliminate single points of failure and design for elasticity.
+**2. If multiple microservices are failing in your project, how do you identify the root cause and debug interconnected services?**  
+Debugging distributed failures requires observability. I use centralized logging (ELK stack or Splunk) with trace IDs propagated across services. 
+Distributed tracing tools like Zipkin or OpenTelemetry help visualize request flows and pinpoint bottlenecks. 
+Metrics from Prometheus/Grafana show which service is under stress. By combining logs, traces, and metrics, I can isolate whether the root cause 
+is a failing dependency, network issue, or resource exhaustion.
+
+**11. What are stored procedures in SQL?**  
+Stored procedures are precompiled SQL code stored in the database. They encapsulate logic like queries, updates, or business rules, 
+and can be executed with parameters. They improve performance by reducing network round trips and enhance security by controlling access to data
+. They also promote reusability and consistency.
+
+**12. How does Spring Boot interact with the database?**  
+Spring Boot interacts with databases via Spring Data JPA, Hibernate, or JDBC. It manages connection pooling, transaction boundaries, 
+and ORM mapping automatically. Developers define repositories, and Spring generates queries at runtime. For complex queries, JPQL or native SQL can be used.
+ This abstraction simplifies persistence while ensuring flexibility.
+
+**7. What is the difference between @Qualifier and @Primary?**  
+`@Primary` marks a bean as the default choice when multiple candidates exist. `@Qualifier` explicitly specifies which bean to inject, overriding the default. 
+### REST API
+**1. Difference between PUT vs PATCH.**  
+PUT replaces the entire resource, while PATCH updates only specific fields. PUT is idempotent and requires full resource data, while PATCH is more efficient for partial updates.
+
+**2. What are HTTP status codes?**  
+Status codes indicate response outcomes. 2xx means success (200 OK, 201 Created), 4xx means client errors (404 Not Found, 400 Bad Request),
+ and 5xx means server errors (500 Internal Server Error). They standardize communication between clients and servers.
+
+**3. What is idempotent API?**  
+An idempotent API produces the same result no matter how many times it’s called. For example, DELETE or PUT requests are idempotent
+ because repeating them doesn’t change the outcome beyond the first execution.
+
+**4. Difference between SOAP vs REST.**  
+SOAP is a protocol with strict standards, XML messaging, and built‑in security. REST is an architectural style using HTTP methods,
+ lightweight payloads (JSON), and is more flexible. REST is widely adopted for web APIs due to simplicity.
+
+**7. What is API Versioning?**  
+API versioning allows evolving APIs without breaking clients. It can be done via URL paths (`/v1/resource`), headers, or query parameters.
+ This ensures backward compatibility and smooth upgrades.
+
+**8. What is HATEOAS?**  
+HATEOAS (Hypermedia as the Engine of Application State) is a REST principle where responses include links to related actions
+. For example, a user resource might include links to update or delete. It makes APIs more discoverable and self‑descriptive.
+
+---
+
+### Database (SQL)
+**1. Difference between INNER JOIN vs LEFT JOIN.**  
+INNER JOIN returns rows with matching values in both tables. LEFT JOIN returns all rows from the left table and matching rows from the right; unmatched rows show NULLs. INNER JOIN is stricter, LEFT JOIN is inclusive.
+
+**2. What is Normalization?**  
+Normalization organizes data into tables to reduce redundancy and improve integrity. It involves splitting data into multiple tables and defining relationships. Normal forms (1NF, 2NF, 3NF) progressively eliminate anomalies like duplication and update issues.
+
+**3. Difference between Primary Key and Unique Key.**  
+A primary key uniquely identifies each row and cannot be NULL. A unique key also enforces uniqueness but allows one NULL value. A table can have only one primary key but multiple unique keys.
